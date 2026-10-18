@@ -1,0 +1,26 @@
+[project]
+name = "daemon"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.14"
+dependencies = [
+    "cffi>=2.1.1",
+    "datasette>=0.65.5",
+    "datasette-vega>=0.6.2",
+    "native-cffi",
+]
+
+
+[build-system]
+requires = ["setuptools>=61.0.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+
+[tool.uv.workspace]
+members = [
+    "build",
+]
+
+[tool.uv.sources]
+native-cffi = { workspace = true }

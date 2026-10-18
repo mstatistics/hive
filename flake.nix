@@ -19,10 +19,12 @@
           packages = [
             pkgs.nodejs
             pkgs.pnpm
-
-            # Required to enable the language server
             pkgs.typescript
             pkgs.typescript-language-server
+            
+            pkgs.uv
+            pkgs.python314Packages.setuptools
+            pkgs.python314Packages.wheel
           ];
         };
       });

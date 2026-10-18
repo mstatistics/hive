@@ -1,0 +1,9 @@
+.direnv
+**.sqlite
+
+**.o
+**.so
+**cffi.c
+**.egg-info
+
+__pycache__

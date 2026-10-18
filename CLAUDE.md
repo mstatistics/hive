@@ -1,8 +1,9 @@
-# Project: local-first IoT logger/controller (Raspberry Pi 5)
+# Project: smart greenhouse controller platform (Raspberry Pi 5)
 
-Time-lapse photos plus continuous sensor logging (temperature, humidity, more TBD) with simple control
-(fan on/off, temperature control). Goal: one step above a prototype, open-sourceable, not market-ready.
-Development speed matters; avoid over-engineering.
+Time-lapse photos plus continuous sensor logging (temperature, humidity, more TBD) with recipe-driven
+control — stage-based schedules that set actuator targets (light, fan, heater) over time windows.
+Goal: one step above a prototype, open-sourceable, not market-ready. Development speed matters; avoid
+over-engineering.
 
 ## Core principles
 
@@ -72,33 +73,34 @@ Already written: both `0001_init.sql` files and `store.ts`. Treat them as the st
   `.immediate()`) for read-then-write transactions.
 - If the web app runs in Docker, bind-mount the *directory* containing the DB (WAL needs `-wal`/`-shm`). Local
   filesystem only, never NFS.
-- Writer rules: the daemon writes `readings`, `events`, `photos`, `rollups`, `status`, `sync_state`, and the
-  status/result columns of `config_revisions` and `commands`. The web app only INSERTs into `config_revisions` and
-  `commands`. The sync agent owns `sync_state`, `photos.state`, `cloud_synced` flags, and inserts cloud-origin rows.
+- Writer rules: the daemon writes `readings`, `events`, `photos`, `rollups`, `status`, and `sync_state`. The web app
+  is read-only (recipes come from the cloud via sync). The sync agent owns `sync_state`, `photos.state`, and inserts
+  cloud-origin recipe rows.
 
-## Commands and config (UI -> hardware)
+## Recipes and control (cloud → hardware)
 
-- The table is the channel. The web app inserts a `commands` row (UUID id, mandatory `expires_ms`). The daemon polls
-  `WHERE status='pending'` every ~250-500 ms inside the control loop, expires stale rows, executes through the control
-  loop, and writes `done`/`failed`/`expired`. Cloud-originated commands are pulled by the sync agent into the same table.
-- Config is one versioned JSON document in `config_revisions`. Identity is a UUID (two possible authors, so no integer
-  counter), ordering is `created_at` (last-writer-wins), and `base_id` records what the author was looking at. The daemon
-  validates a pending revision and marks it `applied` or `rejected` with an error. The active config is the newest
-  `applied` row.
+- A `recipe` is a named grow plan. It contains `stage`s defined by day ranges (day 1 = planting date), each stage has
+  `schedule_window`s (by time-of-day, `HH:MM`; overnight windows wrap past midnight), and each window has `setpoint`s
+  mapping a `control` actuator to a target value. The daemon reads the active recipe and drives actuators to match the
+  current setpoint each control cycle, with fail-safe defaults when no window applies.
+- `control` is a catalog of actuator types (`light`, `fan`, `heater`, etc.) with unit and value range metadata.
+- Recipes are authored in the cloud UI and synced down to the device. An active-recipe assignment (recipe id + planting
+  date) is stored locally so the daemon runs the full schedule offline. Recipe sync is inbound-only (cloud → device).
+- One-shot actuator overrides (previously `commands`) are not yet replaced. TBD.
 
 ## Sync design
 
 - **Telemetry is an append-only log with one writer per device.** `readings` and `events` use a `seq` cursor per stream
   (`sync_state`). The sync agent POSTs batches of a few hundred, the cloud does multi-row
-  `INSERT ... ON CONFLICT DO NOTHING` (readings key: `tenant_id, device_id, sensor_id, ts`; events key: `device_id, seq`),
+  `INSERT ... ON CONFLICT DO NOTHING` (readings key: `device_id, sensor_id, ts`; events key: `device_id, seq`),
   returns the highest persisted `seq`, and only then does the device advance its cursor. At-least-once delivery plus
   idempotent ingest. Exponential backoff, and rate-limit the backlog drain after an outage so live data isn't starved.
 - **Photos do not use a cursor** (uploads finish out of order). The state machine is `pending -> uploaded -> synced`.
   Upload via presigned URL (bytes never pass through the app), then sync the metadata row (idempotency key
   `device_id, local_seq`). Local retention may delete only `synced` photos, oldest first, past a disk threshold.
   Never delete unsynced data unless the disk is critically full, and log it loudly if so.
-- **Config/commands are the only two-way flow.** The device polls (~30 s) for pending cloud rows, applies them,
-  and reports status back. No true bidirectional sync.
+- **Recipes are the only inbound sync flow.** The device polls (~30 s) for updated recipe data and applies it locally.
+  No other two-way sync exists currently.
 - **Time:** store UTC only. Use the Pi 5 RTC battery. Rows carry `clock_ok` (NTP-synced or not). Bad-clock rows land in
   `readings_default` in the cloud and are excluded from rollups.
 - **Retention:** raw readings kept locally 30-90 days. Rollups (1 min, 1 h; store sum+count, not avg) are kept far
@@ -106,8 +108,9 @@ Already written: both `0001_init.sql` files and `store.ts`. Treat them as the st
 
 ## Cloud schema and security (Postgres)
 
-- `tenant_id` and `device_id` on every row, leading every key. `readings` is partitioned monthly by `ts`. Device identity
-  is independent of user accounts.
+- `tenant_id` leads most table keys. `readings` is the exception: it carries no `tenant_id` because `device_id` provides
+  that link via `devices`. RLS on `readings` uses a subquery join through `devices` to enforce tenant isolation.
+  `readings` is partitioned monthly by `ts`. Device identity is independent of user accounts.
 - RLS is enabled on all tables. Roles: `app_web` (per-user, sets `app.user_id` per transaction), `app_ingest`
   (per-device, sets `app.device_id` and `app.tenant_id`), and the owner (migrations and cron only, bypasses RLS).
   **The app must never connect as the owner.** Add a CI test connecting as each role to assert cross-tenant reads return
@@ -131,13 +134,15 @@ Already written: both `0001_init.sql` files and `store.ts`. Treat them as the st
 - Partition maintenance and rollup refresh jobs are `TODO(job)` comments in the cloud migration (pg_cron).
 - The Postgres migration was only syntax-checked, never run. Run it and test the RLS policies first.
 - Tenant member listing needs a SECURITY DEFINER function (a user currently sees only their own membership row).
-- The daemon must seed a default `applied` config revision on first boot.
+- Recipe sync (cloud → device) and active-recipe assignment (device_recipe table tracking recipe id + planting date)
+  are not yet designed or implemented.
+- One-shot actuator overrides (formerly `commands`) have no replacement yet; mechanism TBD.
 - Remaining sensors are TBD. Sensor ids follow `temp_1`, `humidity_1`, etc.
 
 ## Suggested build order
 
 1. Device migration + daemon skeleton: simulated sensors -> `readings`, status table, control loop with fail-safes.
-2. `sqliteStore` + SvelteKit local UI: live view over SSE, charts (uPlot/ECharts), command and config forms.
+2. `sqliteStore` + SvelteKit local UI: live view over SSE, charts (uPlot/ECharts), recipe management UI.
 3. Real drivers (C-library sensor via helper process first), photo capture.
 4. Sync agent plus the cloud ingest endpoint plus pytest sync tests.
 5. `pgStore`, Better Auth, RLS, claim flow, cloud UI. 6. Deploy scripts, retention, hardening.

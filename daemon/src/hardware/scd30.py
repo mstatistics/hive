@@ -4,6 +4,7 @@ from sensor import Sensor
 class SCD30(Sensor):
     def __init__(self):
         hal_init()
+        lib.scd30_init(0x61)
         lib.scd30_start_periodic_measurement(0)  # Start periodic measurement with ambient pressure = 0 (no compensation)
     def blocking_read_measurement_data(self):
         co2_concentration = ffi.new("float *")

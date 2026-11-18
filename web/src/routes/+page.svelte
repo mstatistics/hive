@@ -2,6 +2,7 @@
 	import { Card, ListItem, Button, Icon } from 'm3-svelte';
 	import iconScience from '@ktibow/iconset-material-symbols/science';
 	import iconDevicesOther from '@ktibow/iconset-material-symbols/devices-other';
+	import iconChevronRight from '@ktibow/iconset-material-symbols/chevron-right';
 	import { trials, experiments, devices } from '#lib/mock';
 
 	const STATUS_LABEL: Record<string, string> = {
@@ -42,7 +43,14 @@
 	<section class="section">
 		<div class="section-header">
 			<h2 class="section-heading">Experiments</h2>
-			<Button variant="tonal" href="/experiments">View all</Button>
+			<Button
+				variant="text"
+				href="/experiments"
+				iconType="full"
+				aria-label="View all experiments"
+			>
+				<Icon icon={iconChevronRight}/>
+			</Button>
 		</div>
 		<div class="list-container">
 			{#each experiments.slice(0, 3) as exp (exp.id)}
@@ -63,7 +71,14 @@
 	<section class="section">
 		<div class="section-header">
 			<h2 class="section-heading">Devices</h2>
-			<Button variant="tonal" href="/devices">View all</Button>
+			<Button
+				variant="text"
+				href="/devices"
+				iconType="full"
+				aria-label="View all devices"
+			>
+				<Icon icon={iconChevronRight} />
+			</Button>
 		</div>
 		<div class="list-container">
 			{#each devices.slice(0, 3) as device (device.id)}
@@ -83,9 +98,6 @@
 </div>
 
 <style>
-	.page {
-		max-width: 900px;
-	}
 
 	.page-title {
 		@apply --m3-display-small;
@@ -99,7 +111,7 @@
 	.section-header {
 		display: flex;
 		align-items: center;
-		justify-content: space-between;
+		gap: 0.25rem;
 		margin-bottom: 0.75rem;
 	}
 

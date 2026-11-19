@@ -27,7 +27,7 @@
 
 <style>
 	.page {
-		max-width: 760px;
+		width: 100%;
 	}
 
 	.page-title {

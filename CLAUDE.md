@@ -16,6 +16,23 @@ over-engineering.
    (e.g. fan ON if the temperature sensor goes stale) and setpoints/schedules are cached locally.
 5. **SQLite is the boundary between the web process and the hardware daemon.** No HTTP between them.
 
+## Domain model
+
+The UI introduces two concepts that sit above recipes in the hierarchy:
+
+- **Experiment** — a named study grouping one or more trials. Trials within an experiment can use different recipes (e.g. comparing two lighting schedules). Experiments are authored in the cloud UI.
+- **Trial** — one specific grow run: a recipe assigned to a device with a planting date. The daemon drives the device according to the trial's recipe. A trial produces readings, photos, and events.
+
+Hierarchy: `Experiment → Trial → Recipe + Device`
+
+These are not yet in the DB schema (see Known gaps). When added:
+- `experiments(id, tenant_id, name, description, ...)`
+- `trials(id, experiment_id, recipe_id, device_id, planting_date, status, ...)`
+- Trial status: `active | paused | completed`
+- Trial thumbnail = most recent photo from that trial's device during the trial window.
+
+URL structure: `/experiments/:experimentId` · `/experiments/:experimentId/trials/:trialId` · `/devices/:deviceId` · `/recipes/:recipeId`
+
 ## Stack
 
 **Device (Pi 5)**
@@ -46,6 +63,33 @@ over-engineering.
   (suggest a separate `auth.db` on the device).
 - Migrations are plain numbered `.sql` files. SQLite uses `PRAGMA user_version`. Add a CI test that opens the migrated
   SQLite DB and checks the columns the web side uses.
+
+**Web UI**
+- Component library: **m3-svelte v7** (Material Design 3). Requires `vite-plugin-functions-mixins` as the first Vite plugin (before `sveltekit()`).
+- Icons: `@ktibow/iconset-material-symbols`. Font: `@fontsource-variable/google-sans-flex`.
+- Svelte 5 runes mode enforced project-wide (`runes: true` in vite.config.ts, except node_modules).
+- Path aliases: `$lib` (SvelteKit standard) and `#lib` / `#lib/*` (Node package imports, defined in `package.json`).
+- **Never set `class` on m3-svelte components** — wrap in a `<div>` for sizing/spacing.
+- Use `import { page } from '$app/state'` (not `$app/stores`) in rune-mode files.
+- Mock data lives in `src/lib/mock.ts` and is the only data source until the Store is wired up.
+- Theme tokens live in `src/app.css` (imported once in `+layout.svelte`). Green/teal palette; supports `light-dark()` for automatic dark mode.
+
+**Navigation** (global sidebar — `NavigationRail` from m3-svelte):
+- Home, Experiments, Devices, **Recipes** (top-to-bottom)
+- Account icon at bottom
+- Collapsed: 96 px icon-only rail. Expanded: 220 px drawer showing org name + settings/switch-org buttons.
+- Recipes are managed separately (create, edit, delete, download/export) — not shown on the home screen.
+
+**Pages built so far:**
+- `/` — Home: recent trials carousel (top 8, landscape photo cards), experiments preview list, devices preview list.
+- `/experiments` — full experiment list.
+- `/devices` — full device list.
+
+**Pages planned next (in order):**
+1. Experiment detail (`/experiments/:id`) — trial list with summary stats.
+2. Trial detail (`/experiments/:expId/trials/:id`) — sensor charts, photo gallery, recipe stage timeline.
+3. Device detail (`/devices/:id`) — live status, assigned trial, recent readings.
+4. Recipes (`/recipes`) — CRUD list; recipe editor (stages → windows → setpoints).
 
 **Live updates:** SSE (`ReadableStream` from a `+server.ts` route), not WebSockets. Fan-out is hidden behind a tiny
 `LiveBus` interface so it can move from polling/LISTEN-NOTIFY to Redis later. The cloud view is only as fresh as the
@@ -138,6 +182,9 @@ Already written: both `0001_init.sql` files and `store.ts`. Treat them as the st
   are not yet designed or implemented.
 - One-shot actuator overrides (formerly `commands`) have no replacement yet; mechanism TBD.
 - Remaining sensors are TBD. Sensor ids follow `temp_1`, `humidity_1`, etc.
+- `experiments` and `trials` tables not yet in DB schema (UI uses mock data only).
+- Recipes nav item not yet added to the sidebar (planned, not built).
+- `svelte-kit sync` / `pnpm check` has a pre-existing TS error from a missing `auth.schema` import in `src/lib/server/db/schema.ts`; not introduced by the UI work.
 
 ## Suggested build order
 

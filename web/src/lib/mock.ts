@@ -4,11 +4,14 @@ export type DeviceStatus = 'online' | 'offline';
 export interface Trial {
 	id: string;
 	name: string;
+	experimentId: string;
+	experimentName: string;
 	recipeName: string;
 	deviceName: string;
 	startDate: string;
 	status: TrialStatus;
 	daysElapsed: number;
+	thumbnail?: string;
 }
 
 export interface Experiment {
@@ -36,47 +39,98 @@ export const trials: Trial[] = [
 	{
 		id: 't1',
 		name: 'Basil Batch 7',
+		experimentId: 'e1',
+		experimentName: 'Mediterranean Herbs',
 		recipeName: 'Mediterranean Herbs v2',
 		deviceName: 'Chamber Alpha',
 		startDate: '2026-10-01',
 		status: 'active',
-		daysElapsed: 42
+		daysElapsed: 42,
+		thumbnail: 'https://picsum.photos/seed/t1/260/170'
 	},
 	{
 		id: 't2',
 		name: 'Tomato Trial 3',
+		experimentId: 'e2',
+		experimentName: 'High-Yield Tomato',
 		recipeName: 'High-Yield Tomato',
 		deviceName: 'Chamber Beta',
 		startDate: '2026-09-15',
 		status: 'active',
-		daysElapsed: 58
+		daysElapsed: 58,
+		thumbnail: 'https://picsum.photos/seed/t2/260/170'
 	},
 	{
 		id: 't3',
 		name: 'Spinach Cycle 2',
+		experimentId: 'e3',
+		experimentName: 'Leafy Green Standard',
 		recipeName: 'Leafy Green Standard',
 		deviceName: 'Chamber Gamma',
 		startDate: '2026-10-20',
 		status: 'paused',
-		daysElapsed: 23
+		daysElapsed: 23,
+		thumbnail: 'https://picsum.photos/seed/t3/260/170'
 	},
 	{
 		id: 't4',
 		name: 'Lettuce Mix A',
+		experimentId: 'e4',
+		experimentName: 'Baby Greens Accelerated',
 		recipeName: 'Baby Greens Accelerated',
 		deviceName: 'Chamber Delta',
 		startDate: '2026-09-01',
 		status: 'completed',
-		daysElapsed: 90
+		daysElapsed: 90,
+		thumbnail: 'https://picsum.photos/seed/t4/260/170'
 	},
 	{
 		id: 't5',
 		name: 'Microgreens Run 5',
+		experimentId: 'e5',
+		experimentName: 'Fast Track Microgreens',
 		recipeName: 'Fast Track Microgreens',
 		deviceName: 'Chamber Alpha',
 		startDate: '2026-11-01',
 		status: 'active',
-		daysElapsed: 11
+		daysElapsed: 11,
+		thumbnail: 'https://picsum.photos/seed/t5/260/170'
+	},
+	{
+		id: 't6',
+		name: 'Drought Test A',
+		experimentId: 'e6',
+		experimentName: 'Drought Stress Tolerance',
+		recipeName: 'Deficit Irrigation v1',
+		deviceName: 'Chamber Beta',
+		startDate: '2026-10-10',
+		status: 'completed',
+		daysElapsed: 33,
+		thumbnail: 'https://picsum.photos/seed/t6/260/170'
+	},
+	{
+		id: 't7',
+		name: 'Oregano Batch 2',
+		experimentId: 'e1',
+		experimentName: 'Mediterranean Herbs',
+		recipeName: 'Mediterranean Herbs v2',
+		deviceName: 'Chamber Delta',
+		startDate: '2026-11-05',
+		status: 'active',
+		daysElapsed: 14,
+		thumbnail: 'https://picsum.photos/seed/t7/260/170'
+	},
+	{
+		id: 't8',
+		name: 'Cherry Tom. Trial 1',
+		experimentId: 'e2',
+		experimentName: 'High-Yield Tomato',
+		recipeName: 'High-Yield Tomato',
+		deviceName: 'Chamber Gamma',
+		startDate: '2026-11-08',
+		status: 'active',
+		daysElapsed: 11,
+		thumbnail: 'https://picsum.photos/seed/t8/260/170'
 	}
 ];
 

@@ -61,8 +61,6 @@
 			href="/devices"
 		/>
 
-		<div style="flex: 1" aria-hidden="true"></div>
-
 		<NavigationRailItem label="Account" icon={iconPerson} active={false} href="/account" />
 	</NavigationRail>
 
@@ -76,12 +74,23 @@
 		display: flex;
 		height: 100dvh;
 		overflow: hidden;
+		background: var(--m3c-surface-container);
 	}
 
 	.main-content {
 		flex: 1;
 		overflow-y: auto;
 		padding: 2rem 2.5rem;
+		background: var(--m3c-surface);
+	}
+
+	/* Hide scrollbar on the navigation rail */
+	:global(.app-shell > .m3-container .rail) {
+		scrollbar-width: none;
+	}
+
+	:global(.app-shell > .m3-container .rail::-webkit-scrollbar) {
+		display: none;
 	}
 
 	/* Org panel (rail expanded) */

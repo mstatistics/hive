@@ -4,7 +4,7 @@
   result: var(--size);
 }
 :root {
-  color-scheme: light dark;
+  color-scheme: light;
 }
 @layer tokens {
   :root {
@@ -55,4 +55,12 @@
     --m3c-error-container-subtle: light-dark(#ffcfc4, #5a0e00);
     --m3c-on-error-container-subtle: light-dark(#8e2910, #ff8a6e);
   }
+}
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+  background: var(--m3c-surface-container);
 }

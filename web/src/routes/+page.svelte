@@ -1,14 +1,9 @@
 <script lang="ts">
-	import { Card, ListItem, Button, Icon } from 'm3-svelte';
+	import { ListItem, Icon } from 'm3-svelte';
 	import iconScience from '@ktibow/iconset-material-symbols/science';
 	import iconDevicesOther from '@ktibow/iconset-material-symbols/devices-other';
+	import iconArrowForward from '@ktibow/iconset-material-symbols/arrow-forward';
 	import { trials, experiments, devices } from '#lib/mock';
-
-	const STATUS_LABEL: Record<string, string> = {
-		active: 'Active',
-		paused: 'Paused',
-		completed: 'Done'
-	};
 </script>
 
 <div class="page">
@@ -18,32 +13,29 @@
 	<section class="section">
 		<h2 class="section-heading">Recent Trials</h2>
 		<div class="trials-scroll">
-			{#each trials as trial (trial.id)}
-				<div class="trial-wrap">
-					<Card variant="elevated">
-						<div class="trial-body">
-							<div class="trial-top">
-								<span class="status-pill" data-status={trial.status}>
-									{STATUS_LABEL[trial.status]}
-								</span>
-								<span class="trial-days">Day {trial.daysElapsed}</span>
-							</div>
-							<p class="trial-name">{trial.name}</p>
-							<p class="trial-meta">{trial.recipeName}</p>
-							<p class="trial-meta">{trial.deviceName}</p>
-						</div>
-					</Card>
-				</div>
+			{#each trials.slice(0, 8) as trial (trial.id)}
+				<a class="trial-card" href="/experiments/{trial.experimentId}/trials/{trial.id}">
+					<div class="trial-art">
+						{#if trial.thumbnail}
+							<img src={trial.thumbnail} alt={trial.name} />
+						{/if}
+					</div>
+					<div class="trial-info">
+						<p class="trial-name">{trial.name}</p>
+						<p class="trial-sub">{trial.experimentName}</p>
+						<p class="trial-sub">{trial.deviceName}</p>
+					</div>
+				</a>
 			{/each}
 		</div>
 	</section>
 
 	<!-- Experiments preview -->
 	<section class="section">
-		<div class="section-header">
+		<a class="section-heading-link" href="/experiments">
 			<h2 class="section-heading">Experiments</h2>
-			<Button variant="tonal" href="/experiments">View all</Button>
-		</div>
+			<Icon style="margin-left: 0.25rem;" icon={iconArrowForward}/>
+		</a>
 		<div class="list-container">
 			{#each experiments.slice(0, 3) as exp (exp.id)}
 				<ListItem
@@ -61,10 +53,10 @@
 
 	<!-- Devices preview -->
 	<section class="section">
-		<div class="section-header">
+		<a class="section-heading-link" href="/devices">
 			<h2 class="section-heading">Devices</h2>
-			<Button variant="tonal" href="/devices">View all</Button>
-		</div>
+			<Icon style="margin-left: 0.25rem;" icon={iconArrowForward}/>
+		</a>
 		<div class="list-container">
 			{#each devices.slice(0, 3) as device (device.id)}
 				<ListItem headline={device.name} supporting={device.model} href="/devices">
@@ -84,7 +76,7 @@
 
 <style>
 	.page {
-		max-width: 900px;
+		width: 100%;
 	}
 
 	.page-title {
@@ -96,11 +88,17 @@
 		margin-bottom: 2.5rem;
 	}
 
-	.section-header {
-		display: flex;
+	.section-heading-link {
+		display: inline-flex;
 		align-items: center;
-		justify-content: space-between;
+		gap: 0.25rem;
 		margin-bottom: 0.75rem;
+		text-decoration: none;
+		color: var(--m3c-on-surface);
+	}
+
+	.section-heading-link:hover {
+		color: var(--m3c-primary);
 	}
 
 	.section-heading {
@@ -108,85 +106,71 @@
 		margin: 0 0 0.75rem;
 	}
 
-	.section-header .section-heading {
+	.section-heading-link .section-heading {
 		margin-bottom: 0;
 	}
 
-	/* Trials scroll */
+	/* Trials carousel */
 	.trials-scroll {
 		display: flex;
 		gap: 1rem;
 		overflow-x: auto;
-		padding-bottom: 0.75rem;
-		scroll-snap-type: x mandatory;
-		scrollbar-width: thin;
-		scrollbar-color: var(--m3c-outline-variant) transparent;
+		padding-bottom: 0.5rem;
+		scrollbar-width: none;
 	}
 
-	.trial-wrap {
-		min-width: 220px;
-		max-width: 260px;
-		flex-shrink: 0;
-		scroll-snap-align: start;
+	.trials-scroll::-webkit-scrollbar {
+		display: none;
 	}
 
-	.trial-body {
-		padding: 1rem;
+	.trial-card {
 		display: flex;
 		flex-direction: column;
-		gap: 0.25rem;
+		gap: 0.625rem;
+		flex-shrink: 0;
+		width: 260px;
+		text-decoration: none;
+		color: var(--m3c-on-surface);
 	}
 
-	.trial-top {
+	.trial-art {
+		width: 260px;
+		height: 170px;
+		border-radius: 16px;
+		background: var(--m3c-surface-container-highest);
+		overflow: hidden;
+		flex-shrink: 0;
+	}
+
+	.trial-art img {
+		width: 100%;
+		height: 100%;
+		object-fit: cover;
+	}
+
+	.trial-info {
 		display: flex;
-		justify-content: space-between;
-		align-items: center;
-		margin-bottom: 0.5rem;
+		flex-direction: column;
+		gap: 0.1rem;
+		padding-inline: 0.125rem;
 	}
 
 	.trial-name {
-		@apply --m3-title-medium;
-		margin: 0;
-	}
-
-	.trial-meta {
-		@apply --m3-body-small;
-		color: var(--m3c-on-surface-variant);
-		margin: 0;
-	}
-
-	.trial-days {
-		@apply --m3-label-small;
-		color: var(--m3c-on-surface-variant);
-	}
-
-	.status-pill {
-		@apply --m3-label-small;
-		padding: 0.15rem 0.6rem;
-		border-radius: 999px;
+		@apply --m3-body-medium;
 		font-weight: 600;
-	}
-
-	.status-pill[data-status='active'] {
-		background: var(--m3c-primary-container);
-		color: var(--m3c-on-primary-container);
-	}
-
-	.status-pill[data-status='paused'] {
-		background: var(--m3c-tertiary-container);
-		color: var(--m3c-on-tertiary-container);
-	}
-
-	.status-pill[data-status='completed'] {
-		background: var(--m3c-secondary-container);
-		color: var(--m3c-on-secondary-container);
-	}
-
-	/* Lists */
-	.list-container {
-		border-radius: 12px;
+		margin: 0;
 		overflow: hidden;
-		background-color: var(--m3c-surface-container-low);
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
+	.trial-sub {
+		@apply --m3-body-small;
+		margin: 0;
+		color: var(--m3c-on-surface-variant);
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
 	}
 
 	.status-dot {
